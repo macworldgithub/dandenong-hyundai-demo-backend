@@ -83,6 +83,18 @@ export async function computeKPIs(periodId) {
   const drawnCents = drawnAgg[0]?.total || 0;
   const facilityHeadroomCents = limitCents - drawnCents;
 
+  const sixMonthGrossTrend = {
+    labels: ['Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
+    series: [
+      { name: 'New', color: '#202020', values: [1270, 1330, 1190, 1390, 1510, 1450] },
+      { name: 'Used', color: '#2936ff', values: [790, 830, 870, 900, 920, 940] },
+      { name: 'F&I', color: '#858580', values: [580, 590, 610, 650, 690, 700] },
+      { name: 'Parts', color: '#a08122', values: [1190, 1230, 1220, 1290, 1360, 1420] },
+      { name: 'Service', color: '#277956', values: [1650, 1720, 1730, 1820, 1890, 1960] },
+      { name: 'Body', color: '#d62323', values: [240, 260, 250, 270, 290, 310] },
+    ]
+  };
+
   return {
     periodCode: '2026-09',
     kpis,
@@ -94,6 +106,7 @@ export async function computeKPIs(periodId) {
     },
     facilityLimitCents: limitCents,
     facilityHeadroomCents,
+    sixMonthGrossTrend,
   };
 }
 
