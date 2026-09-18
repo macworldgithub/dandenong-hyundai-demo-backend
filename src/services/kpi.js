@@ -95,6 +95,17 @@ export async function computeKPIs(periodId) {
     ]
   };
 
+  // Stable management P&L snapshot for the demo presentation. Keeping this
+  // data in the API gives every frontend the same approved values.
+  const departmentContributions = [
+    { name: 'New', revenue: 1842750000, costs: 1697750000, net: 145000000 },
+    { name: 'Used', revenue: 1096400000, costs: 1002400000, net: 94000000 },
+    { name: 'F&I', revenue: 84200000, costs: 14200000, net: 70000000 },
+    { name: 'Parts', revenue: 367500000, costs: 225500000, net: 142000000 },
+    { name: 'Service', revenue: 298000000, costs: 102000000, net: 196000000 },
+    { name: 'Body', revenue: 96500000, costs: 65500000, net: 31000000 },
+  ];
+
   return {
     periodCode: '2026-09',
     kpis,
@@ -107,6 +118,7 @@ export async function computeKPIs(periodId) {
     facilityLimitCents: limitCents,
     facilityHeadroomCents,
     sixMonthGrossTrend,
+    departmentContributions,
   };
 }
 
