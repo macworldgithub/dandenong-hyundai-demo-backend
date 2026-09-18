@@ -1,0 +1,19 @@
+// Model index — import all models so they register with Mongoose
+export { default as Entity } from './Entity.js';
+export { default as User } from './User.js';
+export { default as Period } from './Period.js';
+export { default as AuditLog } from './AuditLog.js';
+export { default as Account } from './Account.js';
+export { default as JournalEntry } from './JournalEntry.js';
+export { default as BankAccount } from './BankAccount.js';
+export { default as BankStatement } from './BankStatement.js';
+export { default as BankTransaction } from './BankTransaction.js';
+export { default as ReconciliationPack } from './ReconciliationPack.js';
+export { default as Supplier } from './Supplier.js';
+export { default as PurchaseOrder } from './PurchaseOrder.js';
+export { default as ApInvoice } from './ApInvoice.js';
+export { default as PaymentRun } from './PaymentRun.js';
+export { default as Vehicle } from './Vehicle.js';
+export { default as DealJacket } from './DealJacket.js';
+export { default as FloorplanDraw } from './FloorplanDraw.js';
+export { default as ControlRec } from './ControlRec.js';
