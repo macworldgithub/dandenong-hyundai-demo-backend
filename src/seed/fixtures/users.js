@@ -1,60 +1,20 @@
-// Seed data: Users for the demo
-// All passwords: "demo1234"
+// Seed principals own illustrative audit records only. Interactive users must
+// sign up, so these accounts are deliberately ineligible for authentication.
 export const usersFixture = [
   {
-    name: 'Sarah Mitchell',
-    email: 'sarah@dandenonghyundai.com.au',
-    password: 'demo1234',
-    role: 'controller',
+    name: 'Demo Dealership Principal',
+    email: 'seed-dealership@dandenonghyundai.invalid',
+    password: 'seed-account-disabled',
+    role: 'dealership',
     isIllustrative: true,
+    isSelfRegistered: false,
   },
   {
-    name: 'James Patel',
-    email: 'james@dandenonghyundai.com.au',
-    password: 'demo1234',
-    role: 'accountant',
-    isIllustrative: true,
-  },
-  {
-    name: 'Amy Nguyen',
-    email: 'amy@dandenonghyundai.com.au',
-    password: 'demo1234',
-    role: 'ap_clerk',
-    isIllustrative: true,
-  },
-  {
-    name: 'Mark Thompson',
-    email: 'mark@dandenonghyundai.com.au',
-    password: 'demo1234',
+    name: 'Demo Admin Principal',
+    email: 'seed-admin@dandenonghyundai.invalid',
+    password: 'seed-account-disabled',
     role: 'admin',
     isIllustrative: true,
-  },
-  {
-    name: 'Lisa Chang',
-    email: 'lisa@dandenonghyundai.com.au',
-    password: 'demo1234',
-    role: 'accountant',
-    isIllustrative: true,
-  },
-  {
-    name: 'David Wilson',
-    email: 'david@dandenonghyundai.com.au',
-    password: 'demo1234',
-    role: 'ap_clerk',
-    isIllustrative: true,
-  },
-  {
-    name: 'Rachel Kim',
-    email: 'rachel@dandenonghyundai.com.au',
-    password: 'demo1234',
-    role: 'controller',
-    isIllustrative: true,
-  },
-  {
-    name: 'Tom Adams',
-    email: 'tom@dandenonghyundai.com.au',
-    password: 'demo1234',
-    role: 'accountant',
-    isIllustrative: true,
+    isSelfRegistered: false,
   },
 ];

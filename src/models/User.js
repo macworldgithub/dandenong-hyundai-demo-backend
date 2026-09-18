@@ -8,10 +8,13 @@ const userSchema = new mongoose.Schema(
     passwordHash: { type: String, required: true },
     role: {
       type: String,
-      enum: ['controller', 'ap_clerk', 'accountant', 'admin'],
+      enum: ['dealership', 'admin'],
       required: true,
     },
     isIllustrative: { type: Boolean, default: false },
+    isSelfRegistered: { type: Boolean, default: false },
+    passwordResetTokenHash: { type: String, select: false },
+    passwordResetExpiresAt: { type: Date, select: false },
   },
   { timestamps: true }
 );
@@ -28,6 +31,8 @@ userSchema.statics.hashPassword = async function (plain) {
 userSchema.set('toJSON', {
   transform: (_doc, ret) => {
     delete ret.passwordHash;
+    delete ret.passwordResetTokenHash;
+    delete ret.passwordResetExpiresAt;
     return ret;
   },
 });

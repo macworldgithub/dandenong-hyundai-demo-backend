@@ -90,7 +90,7 @@ async function seed() {
     isIllustrative: true,
   }));
   const users = await User.insertMany(usersWithHash);
-  const adminUser = users.find((u) => u.role === 'controller') || users[0];
+  const adminUser = users.find((u) => u.role === 'admin') || users[0];
 
   // 5. Chart of Accounts
   console.log('📊  Seeding Chart of Accounts (80+ accounts across 6 departments)...');

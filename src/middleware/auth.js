@@ -16,7 +16,7 @@ export default async function auth(req, res, next) {
   try {
     const payload = jwt.verify(token, env.JWT_SECRET);
     const user = await User.findById(payload.sub).select('-passwordHash');
-    if (!user) {
+    if (!user || !user.isSelfRegistered) {
       return res.status(401).json({ error: 'User not found' });
     }
     req.user = user;

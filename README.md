@@ -72,14 +72,13 @@ This is the backend service powering the single-rooftop dealership accounting su
 
 ---
 
-## Demo Credentials (All Passwords: `demo1234`)
+## Authentication
 
-| Name | Role | Email |
-|------|------|-------|
-| Sarah Mitchell | Controller | `sarah@dandenonghyundai.com.au` |
-| Michael Chang | Senior Accountant | `michael@dandenonghyundai.com.au` |
-| Jessica Taylor | AP Clerk | `jessica@dandenonghyundai.com.au` |
-| David Wilson | System Admin | `david@dandenonghyundai.com.au` |
+Interactive users must sign up before logging in and choose either the
+`dealership` or `admin` role. Login requires the same email, password and role
+used at signup. Seed principals own illustrative audit records but cannot log
+in. The password-reset API issues a 15-minute reset token directly because this
+demo tenancy has no outbound email connector.
 
 ---
 
