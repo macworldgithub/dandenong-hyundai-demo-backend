@@ -13,8 +13,13 @@ const userSchema = new mongoose.Schema(
     },
     isIllustrative: { type: Boolean, default: false },
     isSelfRegistered: { type: Boolean, default: false },
+    passwordResetRequestIdHash: { type: String, select: false },
+    passwordResetOtpHash: { type: String, select: false },
+    passwordResetOtpExpiresAt: { type: Date, select: false },
+    passwordResetOtpSentAt: { type: Date, select: false },
+    passwordResetOtpAttempts: { type: Number, default: 0, select: false },
     passwordResetTokenHash: { type: String, select: false },
-    passwordResetExpiresAt: { type: Date, select: false },
+    passwordResetTokenExpiresAt: { type: Date, select: false },
   },
   { timestamps: true }
 );
@@ -32,7 +37,12 @@ userSchema.set('toJSON', {
   transform: (_doc, ret) => {
     delete ret.passwordHash;
     delete ret.passwordResetTokenHash;
-    delete ret.passwordResetExpiresAt;
+    delete ret.passwordResetRequestIdHash;
+    delete ret.passwordResetOtpHash;
+    delete ret.passwordResetOtpExpiresAt;
+    delete ret.passwordResetOtpSentAt;
+    delete ret.passwordResetOtpAttempts;
+    delete ret.passwordResetTokenExpiresAt;
     return ret;
   },
 });

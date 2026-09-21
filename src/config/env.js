@@ -22,6 +22,12 @@ const env = {
     10
   ),
   NODE_ENV: process.env.NODE_ENV || 'development',
+  SMTP_HOST: process.env.SMTP_HOST || process.env.SMTP_EMAIL_HOST || 'smtp.gmail.com',
+  SMTP_PORT: parseInt(process.env.SMTP_PORT || '465', 10),
+  SMTP_SECURE: String(process.env.SMTP_SECURE || 'true').toLowerCase() === 'true',
+  SMTP_USER: process.env.SMTP_USER || process.env.SMTP_USERNAME || process.env.MAIL_USER,
+  SMTP_PASSWORD: process.env.SMTP_PASSWORD || process.env.SMTP_PASS || process.env.MAIL_PASS,
+  SMTP_FROM: process.env.SMTP_FROM || process.env.SMTP_USER || process.env.SMTP_USERNAME,
 };
 
 export default env;
