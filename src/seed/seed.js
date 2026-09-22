@@ -141,7 +141,7 @@ async function seed() {
   const poMap = new Map(purchaseOrders.map((p) => [p.poNumber, p]));
 
   // 9. Vehicles
-  console.log('🚗  Seeding 40 vehicles with full cost stacks...');
+  console.log(`Seeding ${vehiclesFixture.length} vehicles with full cost stacks...`);
   const vehiclesToInsert = vehiclesFixture.map((v) => {
     const totalCostCents = sumCents(v.costLines.map((c) => c.amountCents));
     return {
@@ -154,7 +154,7 @@ async function seed() {
   const vehicleVinMap = new Map(vehicles.map((v) => [v.vin, v]));
 
   // 10. Deal Jackets
-  console.log('📁  Seeding 25 deal jackets...');
+  console.log(`Seeding ${dealJacketsFixture.length} deal jackets...`);
   const dealJacketsToInsert = dealJacketsFixture.map((d) => ({
     vehicleId: vehicleVinMap.get(d.vin)._id,
     dealNumber: d.dealNumber,
@@ -356,9 +356,11 @@ async function seed() {
   const totalFloorplanInterest = sumCents(activeDraws.map((d) => d.interestAccruedCents));
   const totalFloorplanFacility = totalFloorplanDrawn + totalFloorplanInterest;
 
-  // Split active draws between new vehicles (KMHD...0002xx) and demo vehicles (KMHD...0003xx)
-  const activeNewDraws = activeDraws.filter((d) => !d.vin.includes('0003'));
-  const activeDemoDraws = activeDraws.filter((d) => d.vin.includes('0003'));
+  // Split active draws using the seeded vehicle class instead of VIN patterns.
+  const activeNewDraws = activeDraws.filter((d) => vehicleVinMap.get(d.vin)?.class === 'new');
+  const activeDemoDraws = activeDraws.filter((d) =>
+    ['used', 'demo'].includes(vehicleVinMap.get(d.vin)?.class)
+  );
   const newFloorplanDrawn = sumCents(activeNewDraws.map((d) => d.drawnAmountCents));
   const demoFloorplanDrawn = sumCents(activeDemoDraws.map((d) => d.drawnAmountCents));
 
