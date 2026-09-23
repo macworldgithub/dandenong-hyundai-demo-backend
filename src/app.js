@@ -17,9 +17,26 @@ app.use(helmet());
 
 // CORS
 const allowedOrigins = env.CLIENT_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean);
+const isLocalDevelopmentOrigin = (origin) => {
+  if (env.NODE_ENV !== 'development') return false;
+
+  try {
+    const url = new URL(origin);
+    return ['http:', 'https:'].includes(url.protocol)
+      && ['localhost', '127.0.0.1', '[::1]'].includes(url.hostname);
+  } catch {
+    return false;
+  }
+};
+
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+    if (
+      !origin
+      || allowedOrigins.includes('*')
+      || allowedOrigins.includes(origin)
+      || isLocalDevelopmentOrigin(origin)
+    ) {
       callback(null, true);
       return;
     }
