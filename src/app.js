@@ -17,9 +17,7 @@ app.use(helmet());
 
 // CORS
 const allowedOrigins = env.CLIENT_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean);
-const isLocalDevelopmentOrigin = (origin) => {
-  if (env.NODE_ENV !== 'development') return false;
-
+const isLoopbackOrigin = (origin) => {
   try {
     const url = new URL(origin);
     return ['http:', 'https:'].includes(url.protocol)
@@ -35,7 +33,7 @@ app.use(cors({
       !origin
       || allowedOrigins.includes('*')
       || allowedOrigins.includes(origin)
-      || isLocalDevelopmentOrigin(origin)
+      || isLoopbackOrigin(origin)
     ) {
       callback(null, true);
       return;
