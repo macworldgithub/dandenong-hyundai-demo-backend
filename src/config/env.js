@@ -16,7 +16,7 @@ const env = {
   JWT_SECRET: process.env.JWT_SECRET,
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '8h',
   CLIENT_ORIGIN: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
-  UPLOAD_DIR: process.env.UPLOAD_DIR || (process.env.VERCEL ? '/tmp/uploads' : './uploads'),
+  UPLOAD_DIR: process.env.VERCEL ? '/tmp/uploads' : (process.env.UPLOAD_DIR || './uploads'),
   DUAL_APPROVAL_THRESHOLD_CENTS: parseInt(
     process.env.DUAL_APPROVAL_THRESHOLD_CENTS || '500000',
     10

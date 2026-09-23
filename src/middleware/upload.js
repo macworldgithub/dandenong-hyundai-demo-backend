@@ -1,13 +1,13 @@
-import multer from 'multer';
+﻿import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import env from '../config/env.js';
 
-// Ensure upload directory exists
-const uploadDir = path.resolve(env.UPLOAD_DIR);
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+const uploadDir = process.env.VERCEL
+  ? path.join('/tmp', path.basename(env.UPLOAD_DIR || 'uploads'))
+  : path.resolve(env.UPLOAD_DIR);
+
+fs.mkdirSync(uploadDir, { recursive: true });
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadDir),
@@ -24,7 +24,7 @@ const fileFilter = (_req, file, cb) => {
     'application/vnd.ms-excel',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     'application/pdf',
-    'application/octet-stream', // fallback for CSV on some clients
+    'application/octet-stream',
   ];
   if (allowed.includes(file.mimetype) || file.originalname.match(/\.(csv|xlsx|xls|pdf|ofx)$/i)) {
     cb(null, true);
@@ -36,5 +36,5 @@ const fileFilter = (_req, file, cb) => {
 export const upload = multer({
   storage,
   fileFilter,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+  limits: { fileSize: 10 * 1024 * 1024 },
 });
