@@ -1,28 +1,42 @@
 import mongoose from 'mongoose';
 import env from './env.js';
 
+let connectionPromise;
+
 export async function connectDB() {
-  try {
-    await mongoose.connect(env.MONGODB_URI, {
-      // Mongoose 8 defaults are fine; explicit for clarity
-      serverSelectionTimeoutMS: 5000,
-    });
-    console.log('✅  MongoDB connected:', mongoose.connection.host);
-  } catch (err) {
-    console.error('❌  MongoDB connection failed:', err.message);
-    process.exit(1);
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
   }
 
-  mongoose.connection.on('error', (err) => {
-    console.error('MongoDB runtime error:', err.message);
-  });
+  if (!connectionPromise) {
+    connectionPromise = mongoose
+      .connect(env.MONGODB_URI, {
+        serverSelectionTimeoutMS: 5000,
+      })
+      .then(() => {
+        console.log('MongoDB connected:', mongoose.connection.host);
+        return mongoose.connection;
+      })
+      .catch((err) => {
+        connectionPromise = undefined;
+        console.error('MongoDB connection failed:', err.message);
+        throw err;
+      });
+  }
 
-  mongoose.connection.on('disconnected', () => {
-    console.warn('MongoDB disconnected');
-  });
+  return connectionPromise;
 }
 
+mongoose.connection.on('error', (err) => {
+  console.error('MongoDB runtime error:', err.message);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.warn('MongoDB disconnected');
+});
+
 export async function disconnectDB() {
+  connectionPromise = undefined;
   await mongoose.disconnect();
 }
 

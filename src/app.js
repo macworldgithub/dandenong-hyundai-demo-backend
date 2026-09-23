@@ -16,8 +16,15 @@ const app = express();
 app.use(helmet());
 
 // CORS
+const allowedOrigins = env.CLIENT_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean);
 app.use(cors({
-  origin: env.CLIENT_ORIGIN,
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true,
 }));
 
