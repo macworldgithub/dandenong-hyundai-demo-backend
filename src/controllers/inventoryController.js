@@ -6,11 +6,36 @@ import { recomputeVehicleCost, addCostLine, accrueFloorplanInterest, getVehicleC
 import { logAction } from '../services/auditLog.js';
 import { sumCents } from '../utils/money.js';
 
+async function stockSummary() {
+  const [summary] = await Vehicle.aggregate([
+    { $match: { status: { $ne: 'delivered' } } },
+    { $addFields: { age: { $ifNull: ['$ageDays', { $floor: { $divide: [{ $subtract: ['$$NOW', '$createdAt'] }, 86400000] } }] } } },
+    { $facet: {
+      totals: [{ $group: { _id: null, count: { $sum: 1 }, cost: { $sum: '$totalCostCents' }, over90: { $sum: { $cond: [{ $gt: ['$age', 90] }, 1, 0] } } } }],
+      bands: [{ $bucket: { groupBy: '$age', boundaries: [0, 31, 61, 91, 121], default: 121, output: { count: { $sum: 1 }, cost: { $sum: '$totalCostCents' } } } }],
+    } },
+  ]);
+  return { ...(summary?.totals[0] || { count: 0, cost: 0, over90: 0 }), bands: summary?.bands || [] };
+}
+
+export async function getInventoryStats(_req, res) {
+  const [summary, entity, financiers] = await Promise.all([
+    stockSummary(), Entity.findOne(),
+    FloorplanDraw.aggregate([{ $match: { settledDate: null } }, { $group: { _id: '$financier', count: { $sum: 1 }, drawn: { $sum: '$drawnAmountCents' }, interest: { $sum: '$interestAccruedCents' } } }]),
+  ]);
+  const totalDrawnCents = sumCents(financiers.map(f => f.drawn));
+  const facilityLimitCents = entity?.facilityLimitCents || 0;
+  res.json({ summary, facility: { activeDraws: [], total: financiers.reduce((n, f) => n + f.count, 0), totalPages: 0,
+    financiers, totalDrawnCents, totalInterestCents: sumCents(financiers.map(f => f.interest)),
+    facilityLimitCents, headroomCents: facilityLimitCents - totalDrawnCents } });
+}
+
 /**
  * List vehicles (stock grid) with filtering and pagination.
  */
 export async function listVehicles(req, res) {
-  const { status, class: vehicleClass, q, page = 1, limit = 50 } = req.query;
+  const { status, class: vehicleClass, q, page = 1, limit = 15 } = req.query;
+  if (!Number.isSafeInteger(Number(page)) || Number(page) < 1 || !Number.isSafeInteger(Number(limit)) || Number(limit) < 1 || Number(limit) > 100) return res.status(400).json({ error: 'Invalid pagination' });
   const filter = {};
 
   if (status) filter.status = status;
@@ -26,6 +51,7 @@ export async function listVehicles(req, res) {
       { colour: { $regex: q, $options: 'i' } },
       { location: { $regex: q, $options: 'i' } },
       { deal: { $regex: q, $options: 'i' } },
+      { sourceStatus: { $regex: q, $options: 'i' } },
     ];
   }
 
@@ -35,7 +61,9 @@ export async function listVehicles(req, res) {
     .skip((parseInt(page) - 1) * parseInt(limit))
     .limit(parseInt(limit));
 
+  const summary = await stockSummary();
   res.json({
+    summary,
     vehicles,
     page: parseInt(page),
     limit: parseInt(limit),
@@ -110,7 +138,8 @@ export async function addVehicleCostLine(req, res) {
  * List deal jackets with pagination.
  */
 export async function listDeals(req, res) {
-  const { page = 1, limit = 50 } = req.query;
+  const { page = 1, limit = 15 } = req.query;
+  if (!Number.isSafeInteger(Number(page)) || Number(page) < 1 || !Number.isSafeInteger(Number(limit)) || Number(limit) < 1 || Number(limit) > 100) return res.status(400).json({ error: 'Invalid pagination' });
 
   const total = await DealJacket.countDocuments();
   const deals = await DealJacket.find()
@@ -150,7 +179,8 @@ export async function getDeal(req, res) {
  * Get floorplan draws with pagination.
  */
 export async function listFloorplan(req, res) {
-  const { settled, page = 1, limit = 50 } = req.query;
+  const { settled, page = 1, limit = 15 } = req.query;
+  if (!Number.isSafeInteger(Number(page)) || Number(page) < 1 || !Number.isSafeInteger(Number(limit)) || Number(limit) < 1 || Number(limit) > 100) return res.status(400).json({ error: 'Invalid pagination' });
   const filter = {};
 
   if (settled === 'true') filter.settledDate = { $ne: null };
@@ -163,11 +193,16 @@ export async function listFloorplan(req, res) {
     .limit(parseInt(limit))
     .populate('vehicleId', 'vin stockNumber model');
 
-  const totalDrawnCents = sumCents(draws.map((d) => d.drawnAmountCents));
-  const totalInterestCents = sumCents(draws.map((d) => d.interestAccruedCents));
+  const financiers = await FloorplanDraw.aggregate([{ $match: filter }, { $group: { _id: '$financier', count: { $sum: 1 }, drawn: { $sum: '$drawnAmountCents' }, interest: { $sum: '$interestAccruedCents' } } }]);
+  const totalDrawnCents = sumCents(financiers.map(d => d.drawn));
+  const totalInterestCents = sumCents(financiers.map(d => d.interest));
+  const entity = await Entity.findOne();
 
   res.json({
     draws,
+    financiers,
+    facilityLimitCents: entity?.facilityLimitCents || 0,
+    headroomCents: (entity?.facilityLimitCents || 0) - totalDrawnCents,
     totalDrawnCents,
     totalInterestCents,
     page: parseInt(page),
