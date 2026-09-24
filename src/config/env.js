@@ -22,6 +22,8 @@ const env = {
     10
   ),
   NODE_ENV: process.env.NODE_ENV || 'development',
+  CFO_DEMO_MODE: String(process.env.CFO_DEMO_MODE ?? 'true').toLowerCase() === 'true',
+  GL_DEMO_MODE: String(process.env.GL_DEMO_MODE ?? 'true').toLowerCase() === 'true',
   SMTP_HOST: process.env.SMTP_HOST || process.env.SMTP_EMAIL_HOST || 'smtp.gmail.com',
   SMTP_PORT: parseInt(process.env.SMTP_PORT || '465', 10),
   SMTP_SECURE: String(process.env.SMTP_SECURE || 'true').toLowerCase() === 'true',

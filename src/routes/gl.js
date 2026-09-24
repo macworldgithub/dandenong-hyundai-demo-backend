@@ -14,8 +14,10 @@ import {
   exportEvidencePack,
 } from '../controllers/glController.js';
 import auth from '../middleware/auth.js';
+import glDemo from '../middleware/glDemo.js';
 
 const router = Router();
+router.use(auth, glDemo);
 
 router.get('/trial-balance', auth, getTrialBalance);
 router.get('/accounts', auth, getAccounts);

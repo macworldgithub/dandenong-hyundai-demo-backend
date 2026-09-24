@@ -8,6 +8,7 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "seed": "node src/seed/seed.js",
+    "seed:vehicles": "node src/seed/replaceVehicles.js",
     "lint": "eslint src/",
     "vercel-build": "node --check api/index.js && node --check src/server.js"
   },

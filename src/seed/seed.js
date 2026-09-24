@@ -147,7 +147,7 @@ async function seed() {
     return {
       ...v,
       totalCostCents,
-      isIllustrative: true,
+      isIllustrative: false,
     };
   });
   const vehicles = await Vehicle.insertMany(vehiclesToInsert);
@@ -155,7 +155,7 @@ async function seed() {
 
   // 10. Deal Jackets
   console.log(`Seeding ${dealJacketsFixture.length} deal jackets...`);
-  const dealJacketsToInsert = dealJacketsFixture.map((d) => ({
+  const dealJacketsToInsert = dealJacketsFixture.filter((d) => vehicleVinMap.has(d.vin)).map((d) => ({
     vehicleId: vehicleVinMap.get(d.vin)._id,
     dealNumber: d.dealNumber,
     customerRef: d.customerRef,
@@ -178,7 +178,7 @@ async function seed() {
 
   // 11. Floorplan Draws
   console.log('💳  Seeding floorplan draws...');
-  const floorplanDrawsToInsert = floorplanDrawsFixture.map((fp) => ({
+  const floorplanDrawsToInsert = floorplanDrawsFixture.filter((fp) => vehicleVinMap.has(fp.vin)).map((fp) => ({
     vehicleId: vehicleVinMap.get(fp.vin)._id,
     financier: fp.financier,
     drawnAmountCents: fp.drawnAmountCents,
@@ -348,7 +348,7 @@ async function seed() {
   const inStockUsedDemo = vehicles.filter(
     (v) => ['used', 'demo'].includes(v.class) && v.status === 'in_stock'
   );
-  const activeDraws = floorplanDrawsFixture.filter((d) => d.settledDate === null);
+  const activeDraws = floorplanDrawsToInsert.filter((d) => d.settledDate === null);
 
   const totalInStockNewCost = sumCents(inStockNew.map((v) => v.totalCostCents));
   const totalInStockUsedCost = sumCents(inStockUsedDemo.map((v) => v.totalCostCents));
@@ -388,13 +388,13 @@ async function seed() {
       department: 'New',
     },
   ];
-  await postJournalEntry({
+  if (totalFloorplanDrawn > 0) await postJournalEntry({
     periodId: activePeriod._id,
     date: new Date('2026-09-01'),
     source: 'floorplan',
     sourceRef: 'FP-DRAW-0926',
     narration: 'Floorplan Facility Draws — Active In-Stock Units',
-    lines: floorplanLines,
+    lines: floorplanLines.filter((line) => line.debitCents || line.creditCents),
     postedBy: adminUser._id,
   });
 

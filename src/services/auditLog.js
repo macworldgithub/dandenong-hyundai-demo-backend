@@ -28,7 +28,7 @@ export async function getAuditLog({ page = 1, limit = 50, entityType, action, us
 
   const total = await AuditLog.countDocuments(filter);
   const entries = await AuditLog.find(filter)
-    .sort({ at: -1 })
+    .sort({ at: -1, _id: -1 })
     .skip((page - 1) * limit)
     .limit(limit)
     .populate('userId', 'name email');

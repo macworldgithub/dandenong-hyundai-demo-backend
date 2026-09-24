@@ -35,6 +35,17 @@ const vehicleSchema = new mongoose.Schema(
     make: { type: String, default: 'Hyundai' },
     model: { type: String, required: true },
     variant: { type: String },
+    csvDescription: { type: String },
+    registrationNumber: { type: String },
+    odometerKm: { type: Number },
+    colour: { type: String },
+    location: { type: String },
+    listPriceCents: { type: Number, default: 0 },
+    ageDays: { type: Number },
+    deal: { type: String },
+    sourceStatus: { type: String },
+    openRoPo: { type: String },
+    csvSource: { type: String },
     year: { type: Number, required: true },
     class: {
       type: String,
@@ -55,5 +66,6 @@ const vehicleSchema = new mongoose.Schema(
 );
 
 vehicleSchema.index({ class: 1, status: 1 });
+vehicleSchema.index({ registrationNumber: 1 });
 
 export default mongoose.model('Vehicle', vehicleSchema);

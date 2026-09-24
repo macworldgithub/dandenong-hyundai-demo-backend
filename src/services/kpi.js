@@ -5,6 +5,11 @@ import FloorplanDraw from '../models/FloorplanDraw.js';
 import ApInvoice from '../models/ApInvoice.js';
 import BankTransaction from '../models/BankTransaction.js';
 import ControlRec from '../models/ControlRec.js';
+import Account from '../models/Account.js';
+import Entity from '../models/Entity.js';
+import Period from '../models/Period.js';
+import env from '../config/env.js';
+import { cfoDemoManagement } from './cfoDemo.js';
 import { sumCents, fromCents } from '../utils/money.js';
 
 /**
@@ -49,7 +54,7 @@ function fmtCompact(cents) {
 // ─── Main entry ────────────────────────────────────────────────────────
 
 export async function computeKPIs(periodId) {
-  const [absorption, usedGpu, daysSupply, floorplanInterest, effectiveLabour, partsMargin, fniPenetration, inventoryRoi] =
+  const [absorption, usedGpu, daysSupply, floorplanInterest, effectiveLabour, partsMargin, fniPenetration, inventoryRoi, entity, period, inventoryInStockCount] =
     await Promise.all([
       computeAbsorption(periodId),
       computeUsedGPU(periodId),
@@ -59,6 +64,9 @@ export async function computeKPIs(periodId) {
       computePartsMargin(periodId),
       computeFniPenetration(periodId),
       computeInventoryROI(periodId),
+      Entity.findOne(),
+      Period.findById(periodId),
+      Vehicle.countDocuments({ status: 'in_stock' }),
     ]);
 
   const kpis = [absorption, usedGpu, daysSupply, floorplanInterest, effectiveLabour, partsMargin, fniPenetration, inventoryRoi];
@@ -75,7 +83,7 @@ export async function computeKPIs(periodId) {
   const totalExceptionsCount = unmatchedBankTxnsCount + openApExceptionsCount + unreconciledControlRecsCount;
 
   // Facility headroom
-  const limitCents = 1000000000; // $10M
+  const limitCents = entity?.facilityLimitCents || 0;
   const drawnAgg = await FloorplanDraw.aggregate([
     { $match: { settledDate: null } },
     { $group: { _id: null, total: { $sum: '$drawnAmountCents' } } },
@@ -83,31 +91,13 @@ export async function computeKPIs(periodId) {
   const drawnCents = drawnAgg[0]?.total || 0;
   const facilityHeadroomCents = limitCents - drawnCents;
 
-  const sixMonthGrossTrend = {
-    labels: ['Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
-    series: [
-      { name: 'New', color: '#202020', values: [1270, 1330, 1190, 1390, 1510, 1450] },
-      { name: 'Used', color: '#2936ff', values: [790, 830, 870, 900, 920, 940] },
-      { name: 'F&I', color: '#858580', values: [580, 590, 610, 650, 690, 700] },
-      { name: 'Parts', color: '#a08122', values: [1190, 1230, 1220, 1290, 1360, 1420] },
-      { name: 'Service', color: '#277956', values: [1650, 1720, 1730, 1820, 1890, 1960] },
-      { name: 'Body', color: '#d62323', values: [240, 260, 250, 270, 290, 310] },
-    ]
-  };
-
-  // Stable management P&L snapshot for the demo presentation. Keeping this
-  // data in the API gives every frontend the same approved values.
-  const departmentContributions = [
-    { name: 'New', revenue: 1842750000, costs: 1697750000, net: 145000000 },
-    { name: 'Used', revenue: 1096400000, costs: 1002400000, net: 94000000 },
-    { name: 'F&I', revenue: 84200000, costs: 14200000, net: 70000000 },
-    { name: 'Parts', revenue: 367500000, costs: 225500000, net: 142000000 },
-    { name: 'Service', revenue: 298000000, costs: 102000000, net: 196000000 },
-    { name: 'Body', revenue: 96500000, costs: 65500000, net: 31000000 },
-  ];
+  const { sixMonthGrossTrend, departmentContributions } = env.CFO_DEMO_MODE
+    ? cfoDemoManagement(period?.code)
+    : await computeManagementData(periodId);
 
   return {
-    periodCode: '2026-09',
+    periodCode: period?.code || null,
+    managementDataSource: env.CFO_DEMO_MODE ? 'demo' : 'ledger',
     kpis,
     exceptions: {
       unmatchedBankTxnsCount,
@@ -117,7 +107,64 @@ export async function computeKPIs(periodId) {
     },
     facilityLimitCents: limitCents,
     facilityHeadroomCents,
+    inventoryInStockCount,
     sixMonthGrossTrend,
+    departmentContributions,
+  };
+}
+
+async function computeManagementData(periodId) {
+  const [activePeriod, accounts] = await Promise.all([Period.findById(periodId), Account.find()]);
+  const accountTypes = new Map(accounts.map((account) => [String(account._id), account.type]));
+  const periods = activePeriod
+    ? await Period.find({ start: { $lte: activePeriod.start } }).sort({ start: -1 }).limit(6)
+    : [];
+  periods.reverse();
+  const entries = periods.length
+    ? await JournalEntry.find({ periodId: { $in: periods.map((item) => item._id) } })
+    : [];
+  const departments = ['New', 'Used', 'F&I', 'Parts', 'Service', 'Body'];
+  const colors = ['#202020', '#2936ff', '#858580', '#a08122', '#277956', '#d62323'];
+  const values = new Map();
+
+  for (const entry of entries) {
+    for (const line of entry.lines) {
+      if (!departments.includes(line.department)) continue;
+      const type = accountTypes.get(String(line.accountId));
+      const contribution = type === 'revenue'
+        ? (line.creditCents || 0) - (line.debitCents || 0)
+        : type === 'expense'
+          ? (line.creditCents || 0) - (line.debitCents || 0)
+          : 0;
+      const key = `${entry.periodId}:${line.department}`;
+      values.set(key, (values.get(key) || 0) + contribution);
+    }
+  }
+
+  const activeEntries = entries.filter((entry) => String(entry.periodId) === String(periodId));
+  const departmentContributions = departments.map((name) => {
+    let revenue = 0;
+    let costs = 0;
+    for (const entry of activeEntries) {
+      for (const line of entry.lines) {
+        if (line.department !== name) continue;
+        const type = accountTypes.get(String(line.accountId));
+        if (type === 'revenue') revenue += (line.creditCents || 0) - (line.debitCents || 0);
+        if (type === 'expense') costs += (line.debitCents || 0) - (line.creditCents || 0);
+      }
+    }
+    return { name, revenue, costs, net: revenue - costs };
+  });
+
+  return {
+    sixMonthGrossTrend: {
+      labels: periods.map((item) => new Date(item.start).toLocaleDateString('en-AU', { month: 'short' })),
+      series: departments.map((name, index) => ({
+        name,
+        color: colors[index],
+        values: periods.map((item) => Math.round((values.get(`${item._id}:${name}`) || 0) / 100000)),
+      })),
+    },
     departmentContributions,
   };
 }
@@ -148,7 +195,6 @@ async function computeAbsorption(periodId) {
     label: 'Absorption Rate',
     value,
     formattedValue: `${value.toFixed(1)}%`,
-    trendPercentage: 4.8,
     status: value >= 80 ? 'healthy' : value >= 60 ? 'warning' : 'critical',
     desk: 'gl',
   };
@@ -169,7 +215,6 @@ async function computeUsedGPU(periodId) {
     label: 'Total GPU — Used',
     value: avgGpu,
     formattedValue: fmtAUD(avgGpu),
-    trendPercentage: 1.3,
     status: avgGpu >= 300000 ? 'healthy' : avgGpu >= 200000 ? 'warning' : 'critical',
     desk: 'inventory',
   };
@@ -187,7 +232,6 @@ async function computeDaysSupply() {
     label: 'Days Supply',
     value: daysSupply,
     formattedValue: `${daysSupply}d`,
-    trendPercentage: -1.0,
     status: daysSupply <= 45 ? 'healthy' : daysSupply <= 60 ? 'warning' : 'critical',
     desk: 'inventory',
   };
@@ -202,14 +246,16 @@ async function computeFloorplanInterest() {
     label: 'Floorplan Interest',
     value: totalInterest,
     formattedValue: fmtCompact(totalInterest),
-    trendPercentage: -3.2,
     status: totalInterest < 50000000 ? 'healthy' : totalInterest < 80000000 ? 'warning' : 'critical',
     desk: 'inventory',
   };
 }
 
 async function computeEffectiveLabour(periodId) {
-  const entries = await JournalEntry.find({ periodId });
+  const [entries, period] = await Promise.all([
+    JournalEntry.find({ periodId }),
+    Period.findById(periodId),
+  ]);
   let serviceRevenue = 0;
 
   for (const entry of entries) {
@@ -220,7 +266,7 @@ async function computeEffectiveLabour(periodId) {
     }
   }
 
-  const billedHours = 160;
+  const billedHours = period?.billedLabourHours || 0;
   const rateCents = billedHours > 0 ? Math.round(serviceRevenue / billedHours) : 0;
 
   return {
@@ -228,7 +274,6 @@ async function computeEffectiveLabour(periodId) {
     label: 'Effective Labour',
     value: rateCents,
     formattedValue: fmtAUDFull(rateCents),
-    trendPercentage: 2.1,
     status: rateCents >= 15000 ? 'healthy' : rateCents >= 10000 ? 'warning' : 'critical',
     desk: 'gl',
   };
@@ -255,7 +300,6 @@ async function computePartsMargin(periodId) {
     label: 'Parts Gross Margin',
     value: margin,
     formattedValue: `${margin.toFixed(1)}%`,
-    trendPercentage: 4.8,
     status: margin >= 30 ? 'healthy' : margin >= 20 ? 'warning' : 'critical',
     desk: 'gl',
   };
@@ -271,7 +315,6 @@ async function computeFniPenetration(periodId) {
     label: 'F&I Penetration',
     value: rate,
     formattedValue: `${rate.toFixed(1)}%`,
-    trendPercentage: 0,
     status: rate >= 60 ? 'healthy' : rate >= 40 ? 'warning' : 'critical',
     desk: 'inventory',
   };
@@ -296,7 +339,6 @@ async function computeInventoryROI(periodId) {
     label: 'Inventory ROI',
     value: roiRounded,
     formattedValue: `${roiRounded.toFixed(2)}x`,
-    trendPercentage: 12.0,
     status: roiRounded >= 2.0 ? 'healthy' : roiRounded >= 1.0 ? 'warning' : 'critical',
     desk: 'inventory',
   };

@@ -21,6 +21,11 @@ export async function listVehicles(req, res) {
       { stockNumber: { $regex: q, $options: 'i' } },
       { model: { $regex: q, $options: 'i' } },
       { make: { $regex: q, $options: 'i' } },
+      { csvDescription: { $regex: q, $options: 'i' } },
+      { registrationNumber: { $regex: q, $options: 'i' } },
+      { colour: { $regex: q, $options: 'i' } },
+      { location: { $regex: q, $options: 'i' } },
+      { deal: { $regex: q, $options: 'i' } },
     ];
   }
 
