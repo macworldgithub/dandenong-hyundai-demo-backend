@@ -32,7 +32,8 @@ const defaultFiles = [
 
 const makeNames = {
   CHRYSLERJEEP: 'Chrysler Jeep',
-  GREATWALL: 'Great Wall',
+  GREATWALL: 'GWM',
+  OMODAJAECOO: 'Jaecoo',
   MG: 'MG',
   GAC: 'GAC',
   KIA: 'Kia',

@@ -6,9 +6,36 @@ import { recomputeVehicleCost, addCostLine, accrueFloorplanInterest, getVehicleC
 import { logAction } from '../services/auditLog.js';
 import { sumCents } from '../utils/money.js';
 
+const dealershipMakes = [
+  { name: 'Chery', storedAs: ['Chery'] },
+  { name: 'GWM', storedAs: ['GWM', 'Great Wall'] },
+  { name: 'Hyundai', storedAs: ['Hyundai'] },
+  { name: 'Jaecoo', storedAs: ['Jaecoo', 'Omoda Jaecoo', 'Omodajaecoo'] },
+  { name: 'Kia', storedAs: ['Kia'] },
+  { name: 'Lepas', storedAs: ['Lepas'] },
+  { name: 'MG', storedAs: ['MG'] },
+  { name: 'Mitsubishi', storedAs: ['Mitsubishi'] },
+  { name: 'Nissan', storedAs: ['Nissan'] },
+  { name: 'Xpeng', storedAs: ['Xpeng', 'XPeng'] },
+  { name: 'GAC', storedAs: ['GAC'] },
+];
+
+const allowedStoredMakes = dealershipMakes.flatMap(({ storedAs }) => storedAs);
+
+function dealershipMake(name) {
+  return dealershipMakes.find(({ storedAs }) =>
+    storedAs.some((storedName) => storedName.toLowerCase() === String(name).toLowerCase())
+  );
+}
+
+function publicVehicle(vehicle) {
+  const value = vehicle.toObject();
+  return { ...value, make: dealershipMake(value.make)?.name || value.make };
+}
+
 async function stockSummary() {
   const [summary] = await Vehicle.aggregate([
-    { $match: { status: { $ne: 'delivered' } } },
+    { $match: { status: { $ne: 'delivered' }, make: { $in: allowedStoredMakes } } },
     { $addFields: { age: { $ifNull: ['$ageDays', { $floor: { $divide: [{ $subtract: ['$$NOW', '$createdAt'] }, 86400000] } }] } } },
     { $facet: {
       totals: [{ $group: { _id: null, count: { $sum: 1 }, cost: { $sum: '$totalCostCents' }, over90: { $sum: { $cond: [{ $gt: ['$age', 90] }, 1, 0] } } } }],
@@ -31,8 +58,9 @@ export async function getInventoryStats(_req, res) {
 }
 
 export async function listVehicleMakes(_req, res) {
-  const makes = await Vehicle.distinct('make', { make: { $nin: [null, ''] } });
-  res.json({ makes: makes.filter(Boolean).sort((a, b) => a.localeCompare(b)) });
+  const storedMakes = await Vehicle.distinct('make', { make: { $in: allowedStoredMakes } });
+  const available = new Set(storedMakes.map((make) => dealershipMake(make)?.name).filter(Boolean));
+  res.json({ makes: dealershipMakes.map(({ name }) => name).filter((name) => available.has(name)) });
 }
 
 /**
@@ -41,11 +69,12 @@ export async function listVehicleMakes(_req, res) {
 export async function listVehicles(req, res) {
   const { status, class: vehicleClass, make, q, page = 1, limit = 15 } = req.query;
   if (!Number.isSafeInteger(Number(page)) || Number(page) < 1 || !Number.isSafeInteger(Number(limit)) || Number(limit) < 1 || Number(limit) > 100) return res.status(400).json({ error: 'Invalid pagination' });
-  const filter = {};
+  const selectedMake = make ? dealershipMake(make) : null;
+  if (make && !selectedMake) return res.status(400).json({ error: 'Unsupported vehicle make' });
+  const filter = { make: { $in: selectedMake?.storedAs || allowedStoredMakes } };
 
   if (status) filter.status = status;
   if (vehicleClass) filter.class = vehicleClass;
-  if (make) filter.make = make;
   if (q) {
     filter.$or = [
       { vin: { $regex: q, $options: 'i' } },
@@ -70,7 +99,7 @@ export async function listVehicles(req, res) {
   const summary = await stockSummary();
   res.json({
     summary,
-    vehicles,
+    vehicles: vehicles.map(publicVehicle),
     page: parseInt(page),
     limit: parseInt(limit),
     total,
