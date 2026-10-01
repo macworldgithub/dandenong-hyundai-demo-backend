@@ -2,6 +2,7 @@ import atomic from '../middleware/atomic.js';
 import { Router } from 'express';
 import {
   listVehicles,
+  listVehicleMakes,
   getInventoryStats,
   getVehicle,
   addVehicleCostLine,
@@ -14,6 +15,7 @@ import auth from '../middleware/auth.js';
 
 const router = Router();
 router.get('/stats', auth, getInventoryStats);
+router.get('/makes', auth, listVehicleMakes);
 
 router.get('/vehicles', auth, listVehicles);
 router.get('/vehicles/:id', auth, getVehicle);

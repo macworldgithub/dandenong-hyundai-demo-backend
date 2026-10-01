@@ -30,16 +30,22 @@ export async function getInventoryStats(_req, res) {
     facilityLimitCents, headroomCents: facilityLimitCents - totalDrawnCents } });
 }
 
+export async function listVehicleMakes(_req, res) {
+  const makes = await Vehicle.distinct('make', { make: { $nin: [null, ''] } });
+  res.json({ makes: makes.filter(Boolean).sort((a, b) => a.localeCompare(b)) });
+}
+
 /**
  * List vehicles (stock grid) with filtering and pagination.
  */
 export async function listVehicles(req, res) {
-  const { status, class: vehicleClass, q, page = 1, limit = 15 } = req.query;
+  const { status, class: vehicleClass, make, q, page = 1, limit = 15 } = req.query;
   if (!Number.isSafeInteger(Number(page)) || Number(page) < 1 || !Number.isSafeInteger(Number(limit)) || Number(limit) < 1 || Number(limit) > 100) return res.status(400).json({ error: 'Invalid pagination' });
   const filter = {};
 
   if (status) filter.status = status;
   if (vehicleClass) filter.class = vehicleClass;
+  if (make) filter.make = make;
   if (q) {
     filter.$or = [
       { vin: { $regex: q, $options: 'i' } },
