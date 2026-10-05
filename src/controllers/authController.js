@@ -7,7 +7,7 @@ import { logAction } from '../services/auditLog.js';
 import { sendPasswordResetOtp } from '../services/email.js';
 
 const roleSchema = z.enum(['dealership', 'admin']);
-const passwordSchema = z.string().min(8, 'Password must contain at least 8 characters').max(128);
+const passwordSchema = z.string().min(6, 'Password must contain at least 6 characters').max(128);
 const emailSchema = z.string().trim().email().transform((value) => value.toLowerCase());
 const hash = (value) => createHash('sha256').update(value).digest('hex');
 const resetFields = '+passwordResetRequestIdHash +passwordResetOtpHash +passwordResetOtpExpiresAt +passwordResetOtpSentAt +passwordResetOtpAttempts +passwordResetTokenHash +passwordResetTokenExpiresAt';
