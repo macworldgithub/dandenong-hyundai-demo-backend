@@ -10,30 +10,59 @@ const snapshotDate = new Date();
 const defaultCsvDirectory = path.join(process.env.USERPROFILE || process.env.HOME || '.', 'Downloads');
 
 const defaultFiles = [
-  '50_DandenongMitsubishi_Hyundai_SUZUKI_New.csv',
-  '50_DandenongMitsubishi_Hyundai_OMODAJAECOO_New.csv',
-  '50_DandenongMitsubishi_Hyundai_NISSAN_New.csv',
-  '50_DandenongMitsubishi_Hyundai_MITSUBISHI_New.csv',
-  '50_DandenongMitsubishi_Hyundai_MG_New.csv',
-  '50_DandenongMitsubishi_Hyundai_KIA_New.csv',
-  '50_DandenongMitsubishi_Hyundai_HYUNDAI_New.csv',
-  '50_DandenongMitsubishi_Hyundai_HOLDEN_New.csv',
-  '50_DandenongMitsubishi_Hyundai_GREATWALL_New.csv',
-  '50_DandenongMitsubishi_Hyundai_GENESIS_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_GEELY_New.csv',
-  '50_DandenongMitsubishi_Hyundai_GAC_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_GAC_New.csv',
-  '50_DandenongMitsubishi_Hyundai_FORD_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_FIAT_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_CITROEN_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_CHRYSLERJEEP_Used.csv',
+  '50_DandenongMitsubishi_Hyundai_ALFAROMEO_Used.csv',
+  '50_DandenongMitsubishi_Hyundai_AUDI_Used.csv',
+  '50_DandenongMitsubishi_Hyundai_BMW_Used.csv',
+  '50_DandenongMitsubishi_Hyundai_BYD_Used.csv',
+  '50_DandenongMitsubishi_Hyundai_CHERY_New.csv',
   '50_DandenongMitsubishi_Hyundai_CHERY_Used.csv',
+  '50_DandenongMitsubishi_Hyundai_CHRYSLERJEEP_Used.csv',
+  '50_DandenongMitsubishi_Hyundai_CITROEN_Used.csv',
+  '50_DandenongMitsubishi_Hyundai_FIAT_Used.csv',
+  '50_DandenongMitsubishi_Hyundai_FORD_Used.csv',
+  '50_DandenongMitsubishi_Hyundai_GAC_New.csv',
+  '50_DandenongMitsubishi_Hyundai_GAC_Used.csv',
+  '50_DandenongMitsubishi_Hyundai_GEELY_New.csv',
+  '50_DandenongMitsubishi_Hyundai_GENESIS_Used.csv',
+  '50_DandenongMitsubishi_Hyundai_GREATWALL_New.csv',
+  '50_DandenongMitsubishi_Hyundai_GREATWALL_Used.csv',
+  '50_DandenongMitsubishi_Hyundai_HOLDEN_New.csv',
+  '50_DandenongMitsubishi_Hyundai_HOLDEN_Used.csv',
+  '50_DandenongMitsubishi_Hyundai_HONDA_Used.csv',
+  '50_DandenongMitsubishi_Hyundai_HYUNDAI_New.csv',
+  '50_DandenongMitsubishi_Hyundai_HYUNDAI_Used.csv',
+  '50_DandenongMitsubishi_Hyundai_ISUZUUTE_Used.csv',
+  '50_DandenongMitsubishi_Hyundai_JAGUAR_Used.csv',
+  '50_DandenongMitsubishi_Hyundai_KIA_New.csv',
+  '50_DandenongMitsubishi_Hyundai_KIA_Used.csv',
+  '50_DandenongMitsubishi_Hyundai_LANDROVER_Used.csv',
+  '50_DandenongMitsubishi_Hyundai_LDV_Used.csv',
+  '50_DandenongMitsubishi_Hyundai_LEXUS_Used.csv',
+  '50_DandenongMitsubishi_Hyundai_MAHINDRA_Used.csv',
+  '50_DandenongMitsubishi_Hyundai_MAZDA_Used.csv',
+  '50_DandenongMitsubishi_Hyundai_MG_New.csv',
+  '50_DandenongMitsubishi_Hyundai_MITSUBISHI_New.csv',
+  '50_DandenongMitsubishi_Hyundai_NISSAN_New.csv',
+  '50_DandenongMitsubishi_Hyundai_OMODAJAECOO_New.csv',
+  '50_DandenongMitsubishi_Hyundai_SUZUKI_New.csv',
+  '50_DandenongMitsubishi_Hyundai_XPENG_New.csv',
+  '50_dandenong_MG_used.csv',
+  '50_dandenong_mitsubishi_used.csv',
+  '50_dandenong_nissan_usedcsv.csv',
+  '50_dandenong_omodajaecoo_used.csv',
 ];
 
 const makeNames = {
+  ALFAROMEO: 'Alfa Romeo',
+  BMW: 'BMW',
+  BYD: 'BYD',
   CHRYSLERJEEP: 'Chrysler Jeep',
   GREATWALL: 'GWM',
+  ISUZUUTE: 'Isuzu UTE',
+  LANDROVER: 'Land Rover',
+  LDV: 'LDV',
   OMODAJAECOO: 'Jaecoo',
+  XPENG: 'XPeng',
   MG: 'MG',
   GAC: 'GAC',
   KIA: 'Kia',
@@ -79,7 +108,7 @@ function titleCase(value) {
 }
 
 function sourceMeta(fileName) {
-  const match = fileName.match(/^50_DandenongMitsubishi_Hyundai_(.+)_(New|Used)\.csv$/i);
+  const match = fileName.match(/^50_(?:DandenongMitsubishi_Hyundai|dandenong)_(.+?)_(New|Used)(?:csv)?\.csv$/i);
   if (!match) throw new Error(`Unexpected CSV filename: ${fileName}`);
 
   const code = match[1].toUpperCase();
@@ -143,7 +172,7 @@ function toVehicle(row, sourceFile) {
 }
 
 function csvPaths() {
-  const cliFiles = process.argv.slice(2);
+  const cliFiles = process.argv.slice(2).filter((argument) => argument !== '--dry-run');
   return (cliFiles.length ? cliFiles : defaultFiles).map((file) =>
     path.isAbsolute(file) ? file : path.join(defaultCsvDirectory, file)
   );
@@ -167,6 +196,20 @@ async function importVehicleCsvs() {
     throw new Error(`Duplicate stock numbers in CSV import: ${duplicateStockNumbers.join(', ')}`);
   }
 
+  const byClass = vehicles.reduce((summary, vehicle) => {
+    summary[vehicle.class] = (summary[vehicle.class] || 0) + 1;
+    return summary;
+  }, {});
+  const byMake = vehicles.reduce((summary, vehicle) => {
+    summary[vehicle.make] = (summary[vehicle.make] || 0) + 1;
+    return summary;
+  }, {});
+
+  if (process.argv.includes('--dry-run')) {
+    console.log(`Validated ${vehicles.length} vehicles from ${files.length} CSV files`, { byClass, byMake });
+    return;
+  }
+
   await connectDB();
 
   const result = await Vehicle.bulkWrite(
@@ -180,16 +223,12 @@ async function importVehicleCsvs() {
     { ordered: false }
   );
 
-  const byClass = vehicles.reduce((summary, vehicle) => {
-    summary[vehicle.class] = (summary[vehicle.class] || 0) + 1;
-    return summary;
-  }, {});
-
   console.log(`Imported ${vehicles.length} vehicles from ${files.length} CSV files`, {
     inserted: result.upsertedCount,
     updated: result.modifiedCount,
     matched: result.matchedCount,
     byClass,
+    byMake,
   });
 }
 
