@@ -7,50 +7,11 @@ import { connectDB, disconnectDB } from '../config/db.js';
 import Vehicle from '../models/Vehicle.js';
 
 const snapshotDate = new Date();
-const defaultCsvDirectory = path.join(process.env.USERPROFILE || process.env.HOME || '.', 'Downloads');
-
-const defaultFiles = [
-  '50_DandenongMitsubishi_Hyundai_ALFAROMEO_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_AUDI_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_BMW_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_BYD_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_CHERY_New.csv',
-  '50_DandenongMitsubishi_Hyundai_CHERY_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_CHRYSLERJEEP_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_CITROEN_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_FIAT_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_FORD_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_GAC_New.csv',
-  '50_DandenongMitsubishi_Hyundai_GAC_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_GEELY_New.csv',
-  '50_DandenongMitsubishi_Hyundai_GENESIS_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_GREATWALL_New.csv',
-  '50_DandenongMitsubishi_Hyundai_GREATWALL_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_HOLDEN_New.csv',
-  '50_DandenongMitsubishi_Hyundai_HOLDEN_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_HONDA_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_HYUNDAI_New.csv',
-  '50_DandenongMitsubishi_Hyundai_HYUNDAI_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_ISUZUUTE_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_JAGUAR_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_KIA_New.csv',
-  '50_DandenongMitsubishi_Hyundai_KIA_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_LANDROVER_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_LDV_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_LEXUS_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_MAHINDRA_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_MAZDA_Used.csv',
-  '50_DandenongMitsubishi_Hyundai_MG_New.csv',
-  '50_DandenongMitsubishi_Hyundai_MITSUBISHI_New.csv',
-  '50_DandenongMitsubishi_Hyundai_NISSAN_New.csv',
-  '50_DandenongMitsubishi_Hyundai_OMODAJAECOO_New.csv',
-  '50_DandenongMitsubishi_Hyundai_SUZUKI_New.csv',
-  '50_DandenongMitsubishi_Hyundai_XPENG_New.csv',
-  '50_dandenong_MG_used.csv',
-  '50_dandenong_mitsubishi_used.csv',
-  '50_dandenong_nissan_usedcsv.csv',
-  '50_dandenong_omodajaecoo_used.csv',
-];
+const downloadsDirectory = path.join(process.env.USERPROFILE || process.env.HOME || '.', 'Downloads');
+const defaultCsvDirectory = fs.existsSync(path.join(downloadsDirectory, 'dandedong'))
+  ? path.join(downloadsDirectory, 'dandedong')
+  : downloadsDirectory;
+const vehicleCsvPattern = /^50_(?:DandenongMitsubishi_Hyundai|dandenong)_.+_(?:New|Used)(?:csv)?\.csv$/i;
 
 const makeNames = {
   ALFAROMEO: 'Alfa Romeo',
@@ -172,10 +133,26 @@ function toVehicle(row, sourceFile) {
 }
 
 function csvPaths() {
-  const cliFiles = process.argv.slice(2).filter((argument) => argument !== '--dry-run');
-  return (cliFiles.length ? cliFiles : defaultFiles).map((file) =>
-    path.isAbsolute(file) ? file : path.join(defaultCsvDirectory, file)
+  const args = process.argv.slice(2);
+  const directoryOption = args.indexOf('--dir');
+  const sourceDirectory = directoryOption === -1
+    ? defaultCsvDirectory
+    : path.resolve(args[directoryOption + 1] || '');
+  if (directoryOption !== -1 && !args[directoryOption + 1]) {
+    throw new Error('--dir requires a directory path');
+  }
+
+  const cliFiles = args.filter((argument, index) =>
+    argument !== '--dry-run' &&
+    argument !== '--dir' &&
+    index !== directoryOption + 1
   );
+  const files = cliFiles.length
+    ? cliFiles
+    : fs.readdirSync(sourceDirectory).filter((file) => vehicleCsvPattern.test(file)).sort();
+
+  if (!files.length) throw new Error(`No vehicle CSV files found in ${sourceDirectory}`);
+  return files.map((file) => path.isAbsolute(file) ? file : path.join(sourceDirectory, file));
 }
 
 async function importVehicleCsvs() {
@@ -191,7 +168,12 @@ async function importVehicleCsvs() {
   });
 
   const stockNumbers = vehicles.map((vehicle) => vehicle.stockNumber);
-  const duplicateStockNumbers = [...new Set(stockNumbers.filter((stock, index) => stockNumbers.indexOf(stock) !== index))];
+  const seenStockNumbers = new Set();
+  const duplicateStockNumbers = [...new Set(stockNumbers.filter((stock) => {
+    if (seenStockNumbers.has(stock)) return true;
+    seenStockNumbers.add(stock);
+    return false;
+  }))];
   if (duplicateStockNumbers.length) {
     throw new Error(`Duplicate stock numbers in CSV import: ${duplicateStockNumbers.join(', ')}`);
   }
@@ -212,21 +194,23 @@ async function importVehicleCsvs() {
 
   await connectDB();
 
-  const result = await Vehicle.bulkWrite(
-    vehicles.map((vehicle) => ({
-      updateOne: {
-        filter: { stockNumber: vehicle.stockNumber },
-        update: { $set: vehicle },
-        upsert: true,
-      },
-    })),
-    { ordered: false }
+  const existingVehicles = await Vehicle.find({
+    $or: [
+      { stockNumber: { $in: vehicles.map((vehicle) => vehicle.stockNumber) } },
+      { vin: { $in: vehicles.map((vehicle) => vehicle.vin) } },
+    ],
+  }).select('stockNumber vin').lean();
+  const existingStockNumbers = new Set(existingVehicles.map((vehicle) => vehicle.stockNumber));
+  const existingVins = new Set(existingVehicles.map((vehicle) => vehicle.vin));
+  const newVehicles = vehicles.filter((vehicle) =>
+    !existingStockNumbers.has(vehicle.stockNumber) && !existingVins.has(vehicle.vin)
   );
 
-  console.log(`Imported ${vehicles.length} vehicles from ${files.length} CSV files`, {
-    inserted: result.upsertedCount,
-    updated: result.modifiedCount,
-    matched: result.matchedCount,
+  if (newVehicles.length) await Vehicle.insertMany(newVehicles, { ordered: false });
+
+  console.log(`Processed ${vehicles.length} vehicles from ${files.length} CSV files`, {
+    inserted: newVehicles.length,
+    skippedExisting: vehicles.length - newVehicles.length,
     byClass,
     byMake,
   });
