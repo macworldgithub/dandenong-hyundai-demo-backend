@@ -67,5 +67,6 @@ const vehicleSchema = new mongoose.Schema(
 
 vehicleSchema.index({ class: 1, status: 1 });
 vehicleSchema.index({ registrationNumber: 1 });
+vehicleSchema.index({ deal: 1 });
 
 export default mongoose.model('Vehicle', vehicleSchema);

@@ -10,8 +10,10 @@ import {
   getDeal,
   listFloorplan,
   accrueInterest,
+  importInventoryCsv,
 } from '../controllers/inventoryController.js';
 import auth from '../middleware/auth.js';
+import { upload } from '../middleware/upload.js';
 
 const router = Router();
 router.get('/stats', auth, getInventoryStats);
@@ -26,5 +28,7 @@ router.get('/deals/:id', auth, getDeal);
 
 router.get('/floorplan', auth, listFloorplan);
 router.post('/floorplan/accrue-interest', auth, atomic(accrueInterest));
+
+router.post('/import-csv', auth, upload.single('file'), atomic(importInventoryCsv));
 
 export default router;

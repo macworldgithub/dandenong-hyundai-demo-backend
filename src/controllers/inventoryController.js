@@ -5,6 +5,8 @@ import Entity from '../models/Entity.js';
 import { recomputeVehicleCost, addCostLine, accrueFloorplanInterest, getVehicleCostStack } from '../services/costing.js';
 import { logAction } from '../services/auditLog.js';
 import { sumCents } from '../utils/money.js';
+import { processCsvRows, parseCsvContent, importAllDefaultCsvs } from '../services/csvImportService.js';
+import fs from 'fs';
 
 const makeAliases = [
   { name: 'GWM', storedAs: ['GWM', 'Great Wall'] },
@@ -262,3 +264,48 @@ export async function accrueInterest(req, res) {
     })),
   });
 }
+
+/**
+ * Import vehicle inventory & deals CSV files.
+ */
+export async function importInventoryCsv(req, res) {
+  let result;
+  let filename = 'manual_import.csv';
+
+  if (req.file) {
+    filename = req.file.originalname;
+    const content = fs.readFileSync(req.file.path, 'utf8');
+    const rows = parseCsvContent(content);
+    result = await processCsvRows(rows, { fileName: filename, source: 'ui_upload' });
+    try { fs.unlinkSync(req.file.path); } catch {}
+  } else if (req.body?.csvText) {
+    filename = req.body.fileName || 'pasted_data.csv';
+    const rows = parseCsvContent(req.body.csvText);
+    result = await processCsvRows(rows, { fileName: filename, source: 'csv_text' });
+  } else if (req.body?.useDefaultFiles) {
+    const importRes = await importAllDefaultCsvs();
+    result = importRes.totals;
+    filename = 'all_dealership_csvs';
+  } else {
+    return res.status(400).json({ error: 'No CSV file or CSV text provided' });
+  }
+
+  await logAction({
+    userId: req.user._id,
+    action: 'inventory_csv_imported',
+    entityType: 'DealJacket',
+    after: { filename, result },
+  });
+
+  const totalDeals = await DealJacket.countDocuments();
+  const totalVehicles = await Vehicle.countDocuments();
+
+  res.json({
+    success: true,
+    message: 'CSV imported successfully',
+    summary: result,
+    totalDeals,
+    totalVehicles,
+  });
+}
+
