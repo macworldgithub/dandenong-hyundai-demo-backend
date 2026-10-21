@@ -1,4 +1,4 @@
-// Seed data: Bank Statements & Transactions for NAB Operating and Trust accounts
+// Seed data: Bank Statements & Transactions for NAB Operating and Trust accounts (Dandenong Hyundai)
 export const bankStatementsFixture = [
   // ═══════ NAB OPERATING ACCOUNT (1000) — SEPTEMBER 2026 ═══════
   {
@@ -6,39 +6,38 @@ export const bankStatementsFixture = [
     periodCode: '2026-09',
     fileName: 'NAB_Operating_20260930.csv',
     openingBalanceCents: 45672300, // $456,723.00
-    // Total net movement = +$196,582.00
-    closingBalanceCents: 65330500, // $653,305.00
+    closingBalanceCents: 57329134, // $573,291.34
     transactions: [
       // ─── Matched Customer Deal Receipts / Financier Payouts ───
       {
         date: new Date('2026-09-02'),
-        description: 'EFT HYUNDAI CAPITAL FIN SETTLEMENT D-2026-005',
-        amountCents: 3149000,
+        description: 'EFT HYUNDAI CAPITAL FIN SETTLEMENT DH17766',
+        amountCents: 4581818,
         direction: 'credit',
         status: 'matched',
         matchConfidence: 0.99,
         matchType: 'deal_payout',
-        allocations: [{ amountCents: 3149000, dealNumber: 'D-2026-005', note: 'Deal settlement' }],
+        allocations: [{ amountCents: 4581818, dealNumber: 'DH17766', note: 'Staria Load deal settlement' }],
       },
       {
         date: new Date('2026-09-03'),
-        description: 'DEPOSIT MACQUARIE AUTO SETTLEMENT D-2026-020',
-        amountCents: 4999000,
+        description: 'DIRECT CREDIT MACQUARIE AUTO SETTLEMENT DU32980',
+        amountCents: 3054545,
         direction: 'credit',
         status: 'matched',
         matchConfidence: 0.98,
         matchType: 'deal_payout',
-        allocations: [{ amountCents: 4999000, dealNumber: 'D-2026-020', note: 'Used BMW settlement' }],
+        allocations: [{ amountCents: 3054545, dealNumber: 'DU32980', note: 'Used Venue settlement' }],
       },
       {
         date: new Date('2026-09-05'),
-        description: 'DIRECT CREDIT HYUNDAI CAP SETTLEMENT D-2026-006',
-        amountCents: 6299000,
+        description: 'DIRECT CREDIT HYUNDAI CAP SETTLEMENT DH17788',
+        amountCents: 4581818,
         direction: 'credit',
         status: 'matched',
         matchConfidence: 0.99,
         matchType: 'deal_payout',
-        allocations: [{ amountCents: 6299000, dealNumber: 'D-2026-006', note: 'Kona EV settlement' }],
+        allocations: [{ amountCents: 4581818, dealNumber: 'DH17788', note: 'Staria Load settlement' }],
       },
       {
         date: new Date('2026-09-07'),
@@ -48,27 +47,27 @@ export const bankStatementsFixture = [
         status: 'matched',
         matchConfidence: 0.95,
         matchType: 'merchant_settlement',
-        allocations: [{ amountCents: 1452000, accountCode: '4200', note: 'Service revenue clearing' }],
+        allocations: [{ amountCents: 1452000, accountCode: '4300', note: 'Service revenue clearing' }],
       },
       {
         date: new Date('2026-09-08'),
-        description: 'DIRECT CREDIT HYUNDAI CAP SETTLEMENT D-2026-007',
-        amountCents: 5199000,
+        description: 'DIRECT CREDIT HYUNDAI CAP SETTLEMENT DH17783',
+        amountCents: 4581818,
         direction: 'credit',
         status: 'matched',
         matchConfidence: 0.99,
         matchType: 'deal_payout',
-        allocations: [{ amountCents: 5199000, dealNumber: 'D-2026-007', note: 'Santa Fe settlement' }],
+        allocations: [{ amountCents: 4581818, dealNumber: 'DH17783', note: 'Palisade Calligraphy settlement' }],
       },
       {
         date: new Date('2026-09-10'),
-        description: 'DIRECT CREDIT HYUNDAI CAP SETTLEMENT D-2026-008',
-        amountCents: 6899000,
+        description: 'DIRECT CREDIT MACQUARIE AUTO SETTLEMENT DU32938',
+        amountCents: 3054545,
         direction: 'credit',
         status: 'matched',
         matchConfidence: 0.99,
         matchType: 'deal_payout',
-        allocations: [{ amountCents: 6899000, dealNumber: 'D-2026-008', note: 'Calligraphy settlement' }],
+        allocations: [{ amountCents: 3054545, dealNumber: 'DU32938', note: 'Used i30 Elite settlement' }],
       },
       {
         date: new Date('2026-09-12'),
@@ -78,39 +77,39 @@ export const bankStatementsFixture = [
         status: 'matched',
         matchConfidence: 0.94,
         matchType: 'merchant_settlement',
-        allocations: [{ amountCents: 985000, accountCode: '4300', note: 'Parts counter clearing' }],
+        allocations: [{ amountCents: 985000, accountCode: '1100', note: 'Parts counter clearing' }],
       },
 
       // ─── Matched AP Payments & Overhead ───
       {
         date: new Date('2026-09-04'),
-        description: 'EFT PAYMENT SOUTHSIDE AUTO TRANSPORT SAT-99201',
+        description: 'EFT PAYMENT SOUTHSIDE AUTO TRANSPORT SAT-99216',
         amountCents: -98450,
         direction: 'debit',
         status: 'matched',
         matchConfidence: 0.99,
         matchType: 'ap_invoice',
-        allocations: [{ amountCents: -98450, supplierName: 'Southside Auto Transport', note: 'Freight' }],
+        allocations: [{ amountCents: -98450, supplierName: 'Southside Auto Transport', note: 'Freight #320386768' }],
       },
       {
         date: new Date('2026-09-05'),
-        description: 'EFT PAYMENT METRO VEHICLE LOGISTICS MVL-44101',
+        description: 'EFT PAYMENT METRO VEHICLE LOGISTICS MVL-44117',
         amountCents: -98450,
         direction: 'debit',
         status: 'matched',
         matchConfidence: 0.99,
         matchType: 'ap_invoice',
-        allocations: [{ amountCents: -98450, supplierName: 'Metro Vehicle Logistics', note: 'Transport' }],
+        allocations: [{ amountCents: -98450, supplierName: 'Metro Vehicle Logistics', note: 'Transport #320451082' }],
       },
       {
         date: new Date('2026-09-07'),
-        description: 'EFT PAYMENT AUTOGLAZE PAINT PROTECTION AGP-3101',
-        amountCents: -137500,
+        description: 'EFT PAYMENT PRESTIGE AUTO DETAILING PAD-8811',
+        amountCents: -159500,
         direction: 'debit',
         status: 'matched',
         matchConfidence: 0.99,
         matchType: 'ap_invoice',
-        allocations: [{ amountCents: -137500, supplierName: 'AutoGlaze Paint Protection', note: 'Paint pack' }],
+        allocations: [{ amountCents: -159500, supplierName: 'Prestige Auto Detailing', note: 'Recon Tucson S5009135' }],
       },
       {
         date: new Date('2026-09-10'),
@@ -165,11 +164,11 @@ export const bankStatementsFixture = [
         allocations: [],
       },
 
-      // ─── Split Candidate Item (Financier payout requiring multi-deal split) ───
+      // ─── Split Candidate Item (Bulk settlement requiring multi-deal split) ───
       {
         date: new Date('2026-09-16'),
-        description: 'MACQUARIE BULK DEAL DISBURSEMENT 88391',
-        amountCents: 7398000,
+        description: 'HYUNDAI CAPITAL BULK SETTLEMENT (DU32855 & DU33007)',
+        amountCents: 6109090,
         direction: 'credit',
         status: 'suggested',
         matchConfidence: 0.88,

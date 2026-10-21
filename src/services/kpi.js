@@ -409,6 +409,22 @@ export async function drillKPI(key, periodId) {
       return { key, items };
     }
 
+    case 'inventoryRoi': {
+      const vehicles = await Vehicle.find({ status: 'in_stock' })
+        .select('vin stockNumber make model variant year class totalCostCents createdAt')
+        .sort({ totalCostCents: -1 })
+        .limit(50);
+      const items = vehicles.map((v) => ({
+        ref: v.stockNumber,
+        description: `${v.make} ${v.model} ${v.variant} (${v.year})`,
+        vin: v.vin,
+        date: v.createdAt,
+        status: v.class,
+        amountCents: v.totalCostCents,
+      }));
+      return { key, items };
+    }
+
     default: {
       const entries = await JournalEntry.find({ periodId })
         .populate('postedBy', 'name')

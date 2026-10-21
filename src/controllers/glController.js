@@ -132,7 +132,14 @@ export async function getControlRecs(req, res) {
   const entity = await Entity.findOne();
   if (!entity) return res.status(404).json({ error: 'No entity' });
 
-  const recs = await buildAllControlRecs(await requestPeriod(req));
+  const periodId = await requestPeriod(req);
+  const ControlRec = (await import('../models/ControlRec.js')).default;
+  const existing = await ControlRec.find({ periodId });
+  if (existing.length >= 8 && req.query.recalculate !== 'true') {
+    return res.json(existing);
+  }
+
+  const recs = await buildAllControlRecs(periodId);
   res.json(recs);
 }
 

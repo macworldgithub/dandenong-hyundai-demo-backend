@@ -65,7 +65,7 @@ export async function listVehicleMakes(_req, res) {
 export async function listVehicles(req, res) {
   const { status, class: vehicleClass, make, q, page = 1, limit = 15 } = req.query;
   if (!Number.isSafeInteger(Number(page)) || Number(page) < 1 || !Number.isSafeInteger(Number(limit)) || Number(limit) < 1 || Number(limit) > 100) return res.status(400).json({ error: 'Invalid pagination' });
-  const filter = {};
+  const filter = { isIllustrative: { $ne: true } };
 
   if (status) filter.status = status;
   if (vehicleClass) filter.class = vehicleClass;
@@ -221,7 +221,7 @@ export async function listFloorplan(req, res) {
     .sort({ drawnDate: -1 })
     .skip((parseInt(page) - 1) * parseInt(limit))
     .limit(parseInt(limit))
-    .populate('vehicleId', 'vin stockNumber model');
+    .populate('vehicleId', 'vin stockNumber make model year variant class totalCostCents');
 
   const financiers = await FloorplanDraw.aggregate([{ $match: filter }, { $group: { _id: '$financier', count: { $sum: 1 }, drawn: { $sum: '$drawnAmountCents' }, interest: { $sum: '$interestAccruedCents' } } }]);
   const totalDrawnCents = sumCents(financiers.map(d => d.drawn));
@@ -308,4 +308,3 @@ export async function importInventoryCsv(req, res) {
     totalVehicles,
   });
 }
-

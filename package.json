@@ -11,6 +11,7 @@
     "seed:vehicles": "node src/seed/replaceVehicles.js",
     "import:vehicles": "node src/seed/importVehicleCsvs.js",
     "import:csv": "node src/seed/importCsvFiles.js",
+    "sync:data": "node scripts/sync_data.mjs",
     "lint": "eslint src/",
     "vercel-build": "node --check api/index.js && node --check src/server.js"
   },
