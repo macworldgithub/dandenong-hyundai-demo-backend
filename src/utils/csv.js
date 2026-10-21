@@ -42,6 +42,51 @@ export function parseFile(filePath, originalName) {
   throw Object.assign(new Error(`Unsupported file format: .${ext}. Use CSV, OFX or XLSX.`), { statusCode: 422 });
 }
 
+// Bank exports may start with report metadata rather than the transaction header.
+// Do not use the first two columns as a fallback: a management report is not a statement.
+export function bankStatementColumns(headers) {
+  const find = pattern => headers.find(h => pattern.test(String(h).trim()));
+  return {
+    dateCol: find(/^(?:transaction\s+|posting\s+|value\s+)?date$/i),
+    descCol: find(/^(?:transaction\s+)?(?:description|narration|details?|memo)$/i),
+    amountCol: find(/^(?:transaction\s+)?amount(?:\s*\([^)]*\))?$/i),
+    debitCol: find(/^(?:debit|withdrawals?)(?:\s+amount)?(?:\s*\([^)]*\))?$/i),
+    creditCol: find(/^(?:credit|deposits?)(?:\s+amount)?(?:\s*\([^)]*\))?$/i),
+    balanceCol: find(/^(?:(?:running|closing)\s+)?balance(?:\s*\([^)]*\))?$/i),
+  };
+}
+
+export function parseBankStatementFile(filePath, originalName) {
+  const invalid = message => Object.assign(new Error(message), { statusCode: 422 });
+  const ext = (originalName || filePath).toLowerCase().split('.').pop();
+  if (ext === 'ofx') return parseOFX(filePath);
+  let matrix;
+  if (ext === 'csv') {
+    const parsed = Papa.parse(fs.readFileSync(filePath, 'utf8'), { header: false, skipEmptyLines: 'greedy' });
+    const errors = parsed.errors.filter(e => e.code !== 'UndetectableDelimiter');
+    if (errors.length) throw invalid('Unable to read this CSV. Export a fresh bank transaction statement and try again.');
+    matrix = parsed.data;
+  } else if (ext === 'xlsx' || ext === 'xls') {
+    const workbook = XLSX.readFile(filePath, { cellDates: true });
+    if (!workbook.SheetNames.length) throw invalid('The workbook contains no sheets.');
+    matrix = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1, defval: '', blankrows: false });
+  } else {
+    throw invalid('Upload a bank statement in CSV, XLSX, XLS or OFX format.');
+  }
+  const headerIndex = matrix.findIndex(row => {
+    const c = bankStatementColumns(row);
+    return c.dateCol && c.descCol && (c.amountCol || (c.debitCol && c.creditCol));
+  });
+  if (headerIndex < 0) throw invalid('This file does not contain a bank transaction table. Upload a bank statement with Date, Description and either Amount or Debit and Credit columns. Weekly management packs and summary reports cannot be imported here.');
+  const headers = matrix[headerIndex].map(h => String(h).trim());
+  const nonempty = headers.filter(Boolean);
+  if (new Set(nonempty.map(h => h.toLowerCase())).size !== nonempty.length) throw invalid('The statement contains duplicate column names. Export a statement with unique headers.');
+  return matrix.slice(headerIndex + 1).map((row, index) => {
+    if (row.length > headers.length && row.slice(headers.length).some(v => String(v).trim())) throw invalid(`Statement row ${headerIndex + index + 2} has extra columns. Check CSV quoting and separators.`);
+    return Object.fromEntries(headers.filter(Boolean).map(h => [h, row[headers.indexOf(h)] ?? '']));
+  });
+}
+
 
 export function parseDate(value) {
   if (value instanceof Date) return value;

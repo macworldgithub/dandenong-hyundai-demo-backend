@@ -9,7 +9,7 @@ import BankAccount from '../models/BankAccount.js';
 import BankStatement from '../models/BankStatement.js';
 import BankTransaction from '../models/BankTransaction.js';
 import Entity from '../models/Entity.js';
-import { parseFile, parseDate } from '../utils/csv.js';
+import { parseBankStatementFile, bankStatementColumns, parseDate } from '../utils/csv.js';
 import { toCents, sumCents } from '../utils/money.js';
 import { suggestMatches, runBulkMatching } from '../services/matching.js';
 import { buildRecPack } from '../services/reconciliation.js';
@@ -43,7 +43,7 @@ export async function importStatement(req, res) {
   if (await BankStatement.exists({ bankAccountId, contentHash })) return res.status(409).json({ error: 'This statement has already been imported' });
 
   // Parse the uploaded file
-  const rows = parseFile(req.file.path, req.file.originalname);
+  const rows = parseBankStatementFile(req.file.path, req.file.originalname);
 
   if (rows.length === 0) {
     return res.status(422).json({ error: 'File contains no data rows' });
@@ -51,12 +51,7 @@ export async function importStatement(req, res) {
 
   // Detect column mapping (flexible header matching)
   const headers = Object.keys(rows[0]);
-  const dateCol = headers.find((h) => /date/i.test(h)) || headers[0];
-  const descCol = headers.find((h) => /desc|narrat|detail|memo/i.test(h)) || headers[1];
-  const amountCol = headers.find((h) => /amount/i.test(h));
-  const debitCol = headers.find((h) => /debit|withdraw/i.test(h));
-  const creditCol = headers.find((h) => /credit|deposit/i.test(h));
-  const balanceCol = headers.find((h) => /balance/i.test(h));
+  const { dateCol, descCol, amountCol, debitCol, creditCol, balanceCol } = bankStatementColumns(headers);
 
   if (!amountCol && !(debitCol && creditCol)) return res.status(422).json({ error: 'Statement requires Amount or Debit and Credit columns' });
 
